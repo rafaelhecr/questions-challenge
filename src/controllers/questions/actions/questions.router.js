@@ -21,7 +21,10 @@ import TextField from '@material-ui/core/TextField';
 
 
 import {
-    getQuestions
+    getQuestions,
+    sendAnswers,
+    setErrors,
+    setRevisions
 } from '../../../redux/actions/questions.actions'
 
 class QuestionsView extends React.Component{
@@ -57,6 +60,10 @@ class QuestionsView extends React.Component{
         this.setState({answersValue: prevAnswersValue})
     }
 
+    handleSubmit = () => {
+        const { sendAnswers } = this.props;
+        sendAnswers(this.state.answersValue)
+    }
  
     generateQuestionsOnView = () => {
         const { questions } = this.props;
@@ -80,7 +87,7 @@ class QuestionsView extends React.Component{
                                             <FormControlLabel value={qu.answer[2]} control={<Radio />} label={qu.answer[2]} />
                                         </RadioGroup>
                                     :
-                                        <TextField id="filled-basic" label="Type the answer" variant="filled" fullWidth style={{paddingLeft: "10px", paddingRight:"10px"}} onChange={e => this.handleChange(qu.index, e.target.value)} />
+                                        <TextField id="filled-basic" label="Type the answer" variant="filled" fullWidth style={{paddingLeft: "10px", paddingRight:"10px"}} onChange={e => this.handleChange(qu.index, e.target.value)} required/>
                                     }
                                     </Grid>
                                 </Grid>
@@ -102,7 +109,7 @@ class QuestionsView extends React.Component{
                         <CardActions>
                             <Grid container alignContent="center" alignItems="center">
                                 <Grid item sm={12}>
-                                    <Button>Send</Button>
+                                    <Button onClick={this.handleSubmit}>Send</Button>
                                 </Grid>
                             </Grid>
                         </CardActions>
@@ -137,15 +144,85 @@ class QuestionsView extends React.Component{
             </React.Fragment>
         )
     }
+
+    showError = () => {
+        const {error} = this.props;
+        return(
+            <React.Fragment>
+            <Box m={4} />
+            <Card style={{background: "red"}}>
+                <CardContent>
+                    <Typography variant="h6" component="h6">{error}</Typography>
+                </CardContent>
+                <CardActions>
+                    <Grid container alignContent="center" alignItems="center">
+                        <Grid item sm={12}>
+                            <Button onClick={this.handleCloseError}>close</Button>
+                        </Grid>
+                    </Grid>
+                </CardActions>
+            </Card>
+            <Box m={4} />
+        </React.Fragment>
+        )
+    }
+
+    handleCloseError = () => {
+        const { setErrors } = this.props;
+        setErrors(null)
+    }
+
+    showRevitions = () => {
+        let correct = 0;
+        const { revisions } = this.props;
+        revisions.forEach(revition => {
+            if ( revition.result === true ){
+                correct = correct + 1;
+            }
+        })
+        return(
+            <React.Fragment>
+            <Box m={4} />
+            <Card style={{background: "green"}}>
+                <CardContent>
+                    <Typography variant="h6" component="h6">Number of correct anwers: {correct}</Typography>
+                </CardContent>
+                <CardActions>
+                    <Grid container alignContent="center" alignItems="center">
+                        <Grid item sm={12}>
+                            <Button onClick={this.handleCloseResults}>close</Button>
+                        </Grid>
+                    </Grid>
+                </CardActions>
+            </Card>
+            <Box m={4} />
+        </React.Fragment>
+        )
+    }
+
+    handleCloseResults = () => {
+        const { setRevisions } = this.props;
+        setRevisions([])
+    }
+
+
     render(){
         console.log(this.state)
-        const { questions } = this.props;
+        const { loader, error, revisions } = this.props;
         return(
             <React.Fragment>
                <Container>
-                {Boolean(questions.length) ?
-                this.generateQuestionsOnView():
-                this.loader()}
+                   {error ? 
+                   this.showError():
+                   null}
+                   {Boolean(revisions.length)?
+                   this.showRevitions():
+                   null
+                   }
+                    {loader ?
+                        this.loader():
+                        this.generateQuestionsOnView()
+                    }
                </Container>
             </React.Fragment>
         )
@@ -154,14 +231,23 @@ class QuestionsView extends React.Component{
 
 const mapStateToProps = (state) => {
     const questions = state.questions.questions;
+    const loader = state.questions.loader;
+    const error = state.questions.error;
+    const revisions = state.questions.revisions;
     return{
-        questions
+        questions,
+        loader,
+        error,
+        revisions
     }
   }
   
   const mapDispatchToProps = (dispatch,props,context) => {
     return{
-        getQuestions: () => dispatch(getQuestions())
+        getQuestions: () => dispatch(getQuestions()),
+        sendAnswers: answers => dispatch(sendAnswers(answers)),
+        setErrors: error => dispatch(setErrors(error)),
+        setRevisions: results => dispatch(setRevisions(results))
     }
   }
   
